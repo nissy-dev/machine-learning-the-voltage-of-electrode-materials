@@ -8,12 +8,17 @@ This repository is the reproduction for "Machine Learning the Voltage of Electro
 ├── dataset
 ├── preprocess              # feature engineering scripts
 ├── regression              # train scripts
-└── README.md
+├── .flake8
+├── .gitignore
+├── README.md
+└── requirements.txt
 ```
 
 ## How to reproduce
 
-## 1. Clone this repository and setup the environment
+Python version : 3.6.5
+
+### 1. Clone this repository and setup the environment
 
 ```
 $ git clone https://github.com/nd-02110114/machine-learning-the-voltage-of-electrode-materials.git
@@ -32,10 +37,11 @@ $ python create_features.py
 
 ### 3. Go to the regression folder and train models
 
-`YYYY_MM_DD` is the date you created features on. Please set your date.
+`YYYY_MM_DD` is the date you created features. Please set your date.
 
 ```
 $ cd regression
+$ python train.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv --method svr
 $ python train.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv --method krr
 $ python train_dnn.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv
 ```

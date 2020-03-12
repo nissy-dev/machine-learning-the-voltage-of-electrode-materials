@@ -37,7 +37,7 @@ def parse_arguments():
                         help='test data includes one ion, (default: Na)')
     parser.add_argument('--seed', type=int, default=1234,
                         help='seed value for random value, (default: 1234)')
-    # sampling 3977
+    # sampling
     parser.add_argument('--sampling', action='store_true',
                         help='sampling 3977 data for comparing with the previous study, (default: false)')
     return parser.parse_args()
