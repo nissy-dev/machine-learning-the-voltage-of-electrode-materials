@@ -1,7 +1,6 @@
 # Scripts for training models
 
-
-## Training SVR and KRR
+## Train SVR and KRR
 
 ```
 $ python train.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv \
@@ -12,7 +11,7 @@ $ python train.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv \
                   --out-dir result/krr
 ```
 
-## Training DNN
+## Train DNN
 
 ```
 $ python train_dnn.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv \
