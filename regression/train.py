@@ -119,8 +119,7 @@ def main():
     # grid search
     kf = KFold(n_splits=args.fold)
     my_mae = make_scorer(mean_absolute_error, greater_is_better=False)
-    clf = GridSearchCV(model, params, scoring=my_mae,
-                       cv=kf, n_jobs=-1, verbose=True)
+    clf = GridSearchCV(model, params, scoring=my_mae, cv=kf, n_jobs=-1, verbose=True)
     clf.fit(X_train_scaled, y_train)
     # save score and dump
     cv_score = pd.DataFrame.from_dict(clf.cv_results_)
