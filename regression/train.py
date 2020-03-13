@@ -1,14 +1,21 @@
 import json
+import random
 import argparse
 import numpy as np
 import pandas as pd
-from os import path, makedirs, getcwd
+from os import path, makedirs, getcwd, environ
 from sklearn.svm import SVR
 from sklearn.decomposition import PCA
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import r2_score, mean_absolute_error, make_scorer
 from sklearn.model_selection import train_test_split, KFold, GridSearchCV
+
+
+def seed_every_thing(seed=1234):
+    environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
 
 def parse_arguments():
@@ -46,6 +53,9 @@ def main():
     # get args
     args = parse_arguments()
 
+    # set seed
+    seed_every_thing(args.seed)
+
     # make output directory
     out_dir = args.out_dir
     out_dir_path = path.normpath(path.join(getcwd(), out_dir))
@@ -71,7 +81,7 @@ def main():
 
     # sampling
     if args.sampling:
-        train_data = train_data.sample(n=3977, random_state=args.seed)
+        train_data = train_data.sample(n=3977)
 
     # target data
     target = train_data['average_voltage'].values
@@ -87,8 +97,7 @@ def main():
 
     # split and scaling
     X_train, X_test, y_train, y_test, train_idx, test_idx = \
-        train_test_split(features, target, index,
-                         test_size=args.test_ratio, random_state=args.seed)
+        train_test_split(features, target, index, test_size=args.test_ratio)
     x_scaler = MinMaxScaler(feature_range=(-1, 1))
     X_train_scaled = x_scaler.fit_transform(X_train)
     X_test_scaled = x_scaler.transform(X_test)
@@ -108,7 +117,7 @@ def main():
         model = KernelRidge(kernel='rbf')
 
     # grid search
-    kf = KFold(n_splits=args.fold, random_state=args.seed)
+    kf = KFold(n_splits=args.fold)
     my_mae = make_scorer(mean_absolute_error, greater_is_better=False)
     clf = GridSearchCV(model, params, scoring=my_mae,
                        cv=kf, n_jobs=-1, verbose=True)

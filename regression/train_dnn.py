@@ -1,17 +1,25 @@
 import json
+import random
 import argparse
+import numpy as np
 import pandas as pd
-from os import path, makedirs, getcwd
+import tensorflow as tf
+from os import path, makedirs, getcwd, environ
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import r2_score, mean_absolute_error
 from sklearn.model_selection import train_test_split, KFold
-
-
 from keras import regularizers
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.callbacks import EarlyStopping, ModelCheckpoint
+
+
+def seed_every_thing(seed=1234):
+    environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    tf.random.set_seed(seed)
 
 
 def parse_arguments():
@@ -59,6 +67,9 @@ def main():
     # get args
     args = parse_arguments()
 
+    # set seed
+    seed_every_thing(args.seed)
+
     # make output directory
     out_dir = args.out_dir
     out_dir_path = path.normpath(path.join(getcwd(), out_dir))
@@ -84,7 +95,7 @@ def main():
 
     # sampling
     if args.sampling:
-        train_data = train_data.sample(n=3977, random_state=args.seed)
+        train_data = train_data.sample(n=3977)
 
     # target data
     target = train_data['average_voltage'].values
@@ -100,13 +111,13 @@ def main():
 
     # split and scaling
     X_train, X_test, y_train, y_test, train_idx, test_idx = \
-        train_test_split(features, target, index, test_size=args.test_ratio, random_state=args.seed)
+        train_test_split(features, target, index, test_size=args.test_ratio)
     x_scaler = MinMaxScaler(feature_range=(-1, 1))
     X_train_scaled = x_scaler.fit_transform(X_train)
     X_test_scaled = x_scaler.transform(X_test)
 
     # create KFold cross validation instance
-    kf = KFold(n_splits=args.fold, random_state=args.seed)
+    kf = KFold(n_splits=args.fold)
     idx_list = kf.split(X_train)
 
     # cross validation
@@ -153,7 +164,7 @@ def main():
     # H-test
     # retrain all data
     X_train, X_valid, y_train, y_valid = train_test_split(X_train_scaled, y_train,
-                                                          test_size=args.test_ratio, random_state=args.seed)
+                                                          test_size=args.test_ratio)
 
     # initialize model
     regressor = make_dnn_model()
