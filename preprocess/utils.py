@@ -85,7 +85,7 @@ def create_feature_from_formula(formula, element_data, columns=COLUMNS):
             if col != 'OxidationStates':
                 features[i] = element_data[col][ele.number - 1]
             else:
-                # FIXME: I don't under stand how to treat `OxidationStates` data 
+                # FIXME: I don't understand how to treat `OxidationStates` data
                 features[i] = 0
     else:
         weighted_mean_feat = np.zeros(num_of_base_feat)
@@ -111,7 +111,7 @@ def create_feature_from_formula(formula, element_data, columns=COLUMNS):
                 deviation_feat = tmp_deviation_feat / tot_ratio
                 mean_deviation_feat[i] = deviation_feat
             else:
-                # FIXME: I don't under stand how to treat `OxidationStates` data 
+                # FIXME: I don't understand how to treat `OxidationStates` data
                 mean_feat = 0.0
                 deviation_feat = 0.0
                 weighted_mean_feat[i] = mean_feat

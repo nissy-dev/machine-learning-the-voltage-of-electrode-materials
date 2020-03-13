@@ -68,4 +68,5 @@ $ python train_dnn.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.c
 
 ## References
 
-[1] Rajendra P. JoshiJesse, et al. Machine Learning the Voltage of Electrode Materials in Metal-Ion Batteries. _ACS Appl. Mater. Interfaces_, 18494-18503, 2019.
+[1] Rajendra P. JoshiJesse, et al. Machine Learning the Voltage of Electrode Materials in Metal-Ion Batteries. _ACS Appl. Mater. Interfaces_, 18494-18503, 2019.  
+[2] Anubhav Jain, Shyue Ping Ong, Geoffroy Hautier, Wei Chen, William Davidson Richards, Stephen Dacek, Shreyas Cholia, Dan Gunter, David Skinner, Gerbrand Ceder, et al. Commentary: The materials project: A materials genome approach to accelerating materials innovation. _Apl Materials_, 1(1):011002, 2013

@@ -149,14 +149,16 @@ def main():
         test_features = test_data[feat_columns]
         test_features = pca.transform(test_features)
         X_test_scaled = x_scaler.transform(test_features)
-        # predicting
+        # predict
         pred_y_test = regressor.predict(X_test_scaled)
+        # save score
         test_pred_val = pd.DataFrame({'test_ground_truth': y, 'test_pred': pred_y_test.reshape(-1),
                                       'raw_index': test_data.index.values})
         test_score = pd.DataFrame(index=['test'], columns=[
                                   'R2_test', 'MAE_test'])
         test_score.loc['test', 'R2_test'] = r2_score(y, pred_y_test)
         test_score.loc['test', 'MAE_test'] = mean_absolute_error(y, pred_y_test)
+        # dump csv
         test_pred_val.to_csv(path.join(out_dir_path, 'test_{}_pred_value.csv'.format(args.test_ion)))
         test_score.to_csv(path.join(out_dir_path, 'test_{}_score.csv'.format(args.test_ion)))
 
