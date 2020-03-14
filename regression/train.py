@@ -138,14 +138,11 @@ def main():
                                   'raw_index': test_idx})
     test_score = pd.DataFrame(index=['test'], columns=['R2_train', 'MAE_train', 'R2_test', 'MAE_test'])
     test_score.loc['test', 'R2_train'] = r2_score(y_train, pred_y_train)
-    test_score.loc['test', 'MAE_train'] = mean_absolute_error(
-        y_train, pred_y_train)
+    test_score.loc['test', 'MAE_train'] = mean_absolute_error(y_train, pred_y_train)
     test_score.loc['test', 'R2_test'] = r2_score(y_test, pred_y_test)
-    test_score.loc['test', 'MAE_test'] = mean_absolute_error(
-        y_test, pred_y_test)
+    test_score.loc['test', 'MAE_test'] = mean_absolute_error(y_test, pred_y_test)
     # dump csv
-    test_pred_val.to_csv(
-        path.join(out_dir_path, 'test_model_test_pred_value.csv'))
+    test_pred_val.to_csv(path.join(out_dir_path, 'test_model_test_pred_value.csv'))
     test_score.to_csv(path.join(out_dir_path, 'test_score.csv'))
 
     # for Na-test (optional)

@@ -163,8 +163,7 @@ def main():
 
     # H-test
     # retrain all data
-    X_train, X_valid, y_train, y_valid = train_test_split(X_train_scaled, y_train,
-                                                          test_size=args.test_ratio)
+    X_train, X_valid, y_train, y_valid = train_test_split(X_train_scaled, y_train, test_size=args.test_ratio)
 
     # initialize model
     regressor = make_dnn_model()
