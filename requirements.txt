@@ -1,11 +1,14 @@
 absl-py==0.9.0
 astor==0.8.1
+autopep8==1.5
 cachetools==4.0.0
 certifi==2019.11.28
 chardet==3.0.4
 cycler==0.10.0
 dataclasses==0.7
 decorator==4.4.2
+entrypoints==0.3
+flake8==3.7.9
 gast==0.2.2
 google-auth==1.11.2
 google-auth-oauthlib==0.4.1
@@ -20,6 +23,7 @@ Keras-Preprocessing==1.1.0
 kiwisolver==1.1.0
 Markdown==3.2.1
 matplotlib==3.2.0
+mccabe==0.6.1
 monty==3.0.2
 mpmath==1.1.0
 networkx==2.4
@@ -31,7 +35,9 @@ pandas==0.25.3
 protobuf==3.11.3
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
+pycodestyle==2.5.0
 PyDispatcher==2.0.5
+pyflakes==2.1.1
 pymatgen==2020.3.2
 pyparsing==2.4.6
 python-dateutil==2.8.1
