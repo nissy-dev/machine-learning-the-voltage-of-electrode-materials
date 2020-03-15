@@ -41,9 +41,9 @@ $ python create_features.py
 
 ```
 $ cd regression
-$ python train.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv --method svr
-$ python train.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv --method krr
-$ python train_dnn.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv
+$ python train.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv --method svr -out-dir result/svr
+$ python train.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv --method krr -out-dir result/krr
+$ python train_dnn.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv -out-dir result/dnn
 ```
 
 ## Result
