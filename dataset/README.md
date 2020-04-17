@@ -25,7 +25,8 @@ This csv contains the following properties. Total size is 5134.
 - average_voltage
 - capacity_grav
 - capacity_vol
-- energy_grav,energy_vol
+- energy_grav
+- energy_vol
 - max_delta_volume
 - working_ion
 
