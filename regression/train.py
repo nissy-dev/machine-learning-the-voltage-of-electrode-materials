@@ -78,6 +78,7 @@ def main():
     if args.target_ion is not None:
         ion_list = args.target_ion.split('_')
         train_data = table_data[table_data['working_ion'].isin(ion_list)]
+        print(len(train_data))
 
     # sampling
     if args.sampling:
