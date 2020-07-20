@@ -37,8 +37,8 @@ def parse_arguments():
     parser.add_argument('--fold', type=int, default=10,
                         help='fold value for cross validation, (default: 10)')
     # target ion : Li, Ca, Cs, Rb, K, Y, Na, Al, Zn, Mg
-    parser.add_argument('--target-ion', type=str, default='Li_Ca_K_Y_Al_Zn_Mg',
-                        help='drop a specific ion data, (default: Li_Ca_K_Y_Al_Zn_Mg)')
+    parser.add_argument('--target-ion', type=str, default='Li_Ca_K_Al_Zn_Mg',
+                        help='drop a specific ion data, (default: Li_Ca_K_Al_Zn_Mg)')
     parser.add_argument('--test-ion', type=str, default='Na',
                         help='test data includes one ion, (default: Na)')
     parser.add_argument('--seed', type=int, default=1234,
@@ -87,7 +87,7 @@ def main():
     # target data
     target = train_data['average_voltage'].values
     # feature data
-    feat_columns = ['feat_{}'.format(i+1) for i in range(239)]
+    feat_columns = ['feat_{}'.format(i+1) for i in range(239 - 88)]
     features = train_data[feat_columns]
     # index
     index = train_data.index
@@ -151,7 +151,7 @@ def main():
         # preprocess
         test_data = table_data[table_data['working_ion'].isin([args.test_ion])]
         y = test_data['average_voltage'].values
-        feat_columns = ['feat_{}'.format(i+1) for i in range(239)]
+        feat_columns = ['feat_{}'.format(i+1) for i in range(239-88)]
         test_features = test_data[feat_columns]
         test_features = pca.transform(test_features)
         X_test_scaled = x_scaler.transform(test_features)
