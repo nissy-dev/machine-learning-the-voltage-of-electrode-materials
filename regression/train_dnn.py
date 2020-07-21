@@ -7,7 +7,7 @@ import tensorflow as tf
 from os import path, makedirs, getcwd, environ
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import r2_score, mean_absolute_error
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split, KFold
 from keras import regularizers
 from keras.models import Sequential
@@ -129,13 +129,14 @@ def main():
         index=['cv_{}'.format(i+1) for i in range(args.fold)],
         columns=['R2_train', 'MAE_train', 'R2_valid', 'MAE_valid']
     )
+    makedirs(path.join(out_dir_path, 'weights'), exist_ok=True)
     for i, (train_index, valid_index) in enumerate(idx_list):
         X_kf_train, X_kf_valid = X_train_scaled[train_index], X_train_scaled[valid_index]
         y_kf_train, y_kf_valid = y_train[train_index], y_train[valid_index]
 
         # initialize model
         regressor = make_dnn_model()
-        best_weights_filepath = path.join(out_dir_path, 'best_weights_fold_{}.hdf5'.format(i+1))
+        best_weights_filepath = path.join(out_dir_path, 'weights', 'best_weights_fold_{}.hdf5'.format(i+1))
         callbacks = [
             EarlyStopping(monitor='val_mae', min_delta=0, patience=15, verbose=0, mode='auto'),
             ModelCheckpoint(best_weights_filepath, monitor='val_mae', verbose=1, save_best_only=True, mode='auto')
@@ -188,10 +189,10 @@ def main():
     # save score
     test_pred_val = pd.DataFrame({'test_ground_truth': y_test, 'test_pred': pred_y_test.reshape(-1),
                                   'raw_index': test_idx})
-    test_score = pd.DataFrame(index=['test'], columns=['R2_test', 'MAE_test', 'RSME_test'])
+    test_score = pd.DataFrame(index=['test'], columns=['R2_test', 'MAE_test', 'RMSE_test'])
     test_score.loc['test', 'R2_test'] = r2_score(y_test, pred_y_test)
     test_score.loc['test', 'MAE_test'] = mean_absolute_error(y_test, pred_y_test)
-    test_score.loc['test', 'RSME_test'] = root_mean_squared_error(y_test, pred_y_test)
+    test_score.loc['test', 'RMSE_test'] = root_mean_squared_error(y_test, pred_y_test)
     # dump csv
     test_pred_val.to_csv(path.join(out_dir_path, 'test_pred_value.csv'))
     test_score.to_csv(path.join(out_dir_path, 'test_score.csv'))
@@ -211,10 +212,10 @@ def main():
         # save score
         test_pred_val = pd.DataFrame({'test_ground_truth': y, 'test_pred': pred_y.reshape(-1),
                                       'raw_index': test_data.index.values})
-        test_score = pd.DataFrame(index=['test'], columns=['R2_test', 'MAE_test', 'RSME_test'])
+        test_score = pd.DataFrame(index=['test'], columns=['R2_test', 'MAE_test', 'RMSE_test'])
         test_score.loc['test', 'R2_test'] = r2_score(y, pred_y)
         test_score.loc['test', 'MAE_test'] = mean_absolute_error(y, pred_y)
-        test_score.loc['test', 'RSME_test'] = root_mean_squared_error(y, pred_y)
+        test_score.loc['test', 'RMSE_test'] = root_mean_squared_error(y, pred_y)
         # dump csv
         test_pred_val.to_csv(path.join(out_dir_path, 'test_{}_pred_value.csv'.format(args.test_ion)))
         test_score.to_csv(path.join(out_dir_path, 'test_{}_score.csv'.format(args.test_ion)))
