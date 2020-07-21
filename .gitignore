@@ -132,3 +132,4 @@ dmypy.json
 result
 dataset/feature/*
 .vscode
+archive

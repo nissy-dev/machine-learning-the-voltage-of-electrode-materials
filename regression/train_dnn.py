@@ -32,9 +32,9 @@ def parse_arguments():
     parser.add_argument('--out-dir', '-o', default='result',
                         type=str, help='path for output directory')
     # for model
-    parser.add_argument('--train-ratio', default=0.9, type=float,
+    parser.add_argument('--train-ratio', default=0.8, type=float,
                         help='percentage of train data to be loaded (default 0.9)')
-    parser.add_argument('--test-ratio', default=0.1, type=float,
+    parser.add_argument('--test-ratio', default=0.2, type=float,
                         help='percentage of test data to be loaded (default 0.1)')
     parser.add_argument('--fold', type=int, default=10,
                         help='fold value for cross validation, (default: 10)')
@@ -49,6 +49,10 @@ def parse_arguments():
     parser.add_argument('--sampling', action='store_true',
                         help='sampling 3977 data for comparing with the previous study, (default: false)')
     return parser.parse_args()
+
+
+def root_mean_squared_error(y_true, y_pred):
+    return np.sqrt(mean_squared_error(y_true, y_pred))
 
 
 def make_dnn_model():
@@ -184,11 +188,10 @@ def main():
     # save score
     test_pred_val = pd.DataFrame({'test_ground_truth': y_test, 'test_pred': pred_y_test.reshape(-1),
                                   'raw_index': test_idx})
-    test_score = pd.DataFrame(index=['test'], columns=['R2_valid', 'MAE_valid', 'R2_test', 'MAE_test'])
-    test_score.loc['test', 'R2_valid'] = r2_score(y_valid, pred_y_valid)
-    test_score.loc['test', 'MAE_valid'] = mean_absolute_error(y_valid, pred_y_valid)
+    test_score = pd.DataFrame(index=['test'], columns=['R2_test', 'MAE_test', 'RSME_test'])
     test_score.loc['test', 'R2_test'] = r2_score(y_test, pred_y_test)
     test_score.loc['test', 'MAE_test'] = mean_absolute_error(y_test, pred_y_test)
+    test_score.loc['test', 'RSME_test'] = root_mean_squared_error(y_test, pred_y_test)
     # dump csv
     test_pred_val.to_csv(path.join(out_dir_path, 'test_pred_value.csv'))
     test_score.to_csv(path.join(out_dir_path, 'test_score.csv'))
@@ -208,9 +211,10 @@ def main():
         # save score
         test_pred_val = pd.DataFrame({'test_ground_truth': y, 'test_pred': pred_y.reshape(-1),
                                       'raw_index': test_data.index.values})
-        test_score = pd.DataFrame(index=['test'], columns=['R2_test', 'MAE_test'])
+        test_score = pd.DataFrame(index=['test'], columns=['R2_test', 'MAE_test', 'RSME_test'])
         test_score.loc['test', 'R2_test'] = r2_score(y, pred_y)
         test_score.loc['test', 'MAE_test'] = mean_absolute_error(y, pred_y)
+        test_score.loc['test', 'RSME_test'] = root_mean_squared_error(y, pred_y)
         # dump csv
         test_pred_val.to_csv(path.join(out_dir_path, 'test_{}_pred_value.csv'.format(args.test_ion)))
         test_score.to_csv(path.join(out_dir_path, 'test_{}_score.csv'.format(args.test_ion)))
