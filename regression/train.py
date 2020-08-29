@@ -73,7 +73,10 @@ def main():
     battery_path = path.normpath(path.join(getcwd(), args.battery_path))
     feat_data = pd.read_csv(feat_path, index_col=0)
     battery_data = pd.read_csv(battery_path, index_col=0)
+    past_index = battery_data.index
+    battery_data = battery_data.reset_index()
     table_data = battery_data.join(feat_data)
+    table_data.index = past_index
 
     # collect target ion data
     if args.target_ion is not None:
