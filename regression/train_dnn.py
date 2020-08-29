@@ -39,8 +39,8 @@ def parse_arguments():
     parser.add_argument('--fold', type=int, default=10,
                         help='fold value for cross validation, (default: 10)')
     # target ion : Li, Ca, Cs, Rb, K, Y, Na, Al, Zn, Mg
-    parser.add_argument('--target-ion', type=str, default='Li_Ca_K_Al_Zn_Mg',
-                        help='drop a specific ion data, (default: Li_Ca_K_Al_Zn_Mg)')
+    parser.add_argument('--target-ion', type=str, default='Li_Ca_K_Al_Zn_Mg_Y_Rb_Cs',
+                        help='drop a specific ion data, (default: Li_Ca_K_Al_Zn_Mg_Y_Rb_Cs)')
     parser.add_argument('--test-ion', type=str, default='Na',
                         help='test data includes one ion, (default: Na)')
     parser.add_argument('--seed', type=int, default=1234,
