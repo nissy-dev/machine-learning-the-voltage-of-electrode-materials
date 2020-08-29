@@ -134,3 +134,4 @@ dataset/feature/*
 .vscode
 archive
 aggregated.csv
+*.sh.*
