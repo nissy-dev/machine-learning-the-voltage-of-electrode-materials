@@ -1,15 +1,17 @@
 import json
 import random
 import argparse
+from os import path, makedirs, getcwd, environ
+
+
 import numpy as np
 import pandas as pd
-from os import path, makedirs, getcwd, environ
 from sklearn.svm import SVR
 from sklearn.decomposition import PCA
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import r2_score, mean_absolute_error, make_scorer, mean_squared_error
-from sklearn.model_selection import train_test_split, KFold, GridSearchCV
+from sklearn.model_selection import train_test_split, StratifiedKFold, GridSearchCV
 
 
 def seed_every_thing(seed=1234):
@@ -30,10 +32,12 @@ def parse_arguments():
     # for model
     parser.add_argument('--method', choices=['svr', 'krr'], default='krr',
                         help='choose a regression method, SVR, KRR (default: krr)')
-    parser.add_argument('--train-ratio', default=0.8, type=float,
-                        help='percentage of train data to be loaded (default 0.9)')
+    parser.add_argument('--train-ratio', default=0.6, type=float,
+                        help='percentage of train data to be loaded (default 0.8)')
+    parser.add_argument('--valid-ratio', default=0.2, type=float,
+                        help='percentage of valid data to be loaded (default 0.2)')
     parser.add_argument('--test-ratio', default=0.2, type=float,
-                        help='percentage of test data to be loaded (default 0.1)')
+                        help='percentage of test data to be loaded (default 0.2)')
     parser.add_argument('--fold', type=int, default=10,
                         help='fold value for cross validation, (default: 10)')
     # target ion : Li, Ca, Cs, Rb, K, Y, Na, Al, Zn, Mg
@@ -87,6 +91,12 @@ def main():
     if args.sampling:
         train_data = train_data.sample(n=3977)
 
+
+    # split
+    train_table, valid_table, test_table = \
+        train_valid_test_split(train_data, train_ratio=args.train_ratio, val_ratio=args.valid_ratio,
+                               test_ratio=args.test_ratio, stratify='working_ion')
+
     # target data
     target = train_data['average_voltage'].values
     # feature data
@@ -101,7 +111,8 @@ def main():
 
     # split and scaling
     X_train, X_test, y_train, y_test, train_idx, test_idx = \
-        train_test_split(features, target, index, test_size=args.test_ratio)
+        train_test_split(features, target, index, stratify=train_data['working_ion'],
+                         test_size=args.test_ratio)
     x_scaler = MinMaxScaler(feature_range=(-1, 1))
     X_train_scaled = x_scaler.fit_transform(X_train)
     X_test_scaled = x_scaler.transform(X_test)
@@ -121,9 +132,10 @@ def main():
         model = KernelRidge(kernel='rbf')
 
     # grid search
-    kf = KFold(n_splits=args.fold)
+    kf = StratifiedKFold(n_splits=args.fold)
+    id_list = kf.split(X_train_scaled, train_table[train_idx]['working_ion'])
     my_mae = make_scorer(mean_absolute_error, greater_is_better=False)
-    clf = GridSearchCV(model, params, scoring=my_mae, cv=kf, n_jobs=-1, verbose=True)
+    clf = GridSearchCV(model, params, scoring=my_mae, cv=id_list, n_jobs=-1, verbose=True)
     clf.fit(X_train_scaled, y_train)
     # save score and dump
     cv_score = pd.DataFrame.from_dict(clf.cv_results_)

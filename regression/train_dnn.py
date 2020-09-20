@@ -1,14 +1,16 @@
 import json
 import random
 import argparse
+from os import path, makedirs, getcwd, environ
+
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from os import path, makedirs, getcwd, environ
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from keras import regularizers
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
@@ -67,6 +69,21 @@ def make_dnn_model():
     return model
 
 
+def train_valid_test_split(table, train_ratio, val_ratio, test_ratio, stratify):
+    # validation
+    assert train_ratio + val_ratio + test_ratio == 1
+    x_remaining, x_test = train_test_split(table, test_size=test_ratio, stratify=table[stratify])
+
+    # Adjusts val ratio, w.r.t. remaining dataset.
+    ratio_remaining = 1 - test_ratio
+    ratio_val_adjusted = val_ratio / ratio_remaining
+
+    # Produces train and val splits.
+    x_train, x_val = train_test_split(x_remaining, test_size=ratio_val_adjusted, stratify=x_remaining[stratify])
+    return x_train, x_val, x_test
+
+
+
 def main():
     # get args
     args = parse_arguments()
@@ -87,10 +104,8 @@ def main():
     battery_path = path.normpath(path.join(getcwd(), args.battery_path))
     feat_data = pd.read_csv(feat_path, index_col=0)
     battery_data = pd.read_csv(battery_path, index_col=0)
-    past_index = battery_data.index
-    battery_data = battery_data.reset_index()
+    feat_data.index = battery_data.index
     table_data = battery_data.join(feat_data)
-    table_data.index = past_index
 
     # collect target ion data
     if args.target_ion is not None:
@@ -121,8 +136,8 @@ def main():
     X_test_scaled = x_scaler.transform(X_test)
 
     # create KFold cross validation instance
-    kf = KFold(n_splits=args.fold)
-    idx_list = kf.split(X_train)
+    kf = StratifiedKFold(n_splits=args.fold)
+    idx_list = kf.split(X_train_scaled, train_data[train_idx]['working_ion'])
 
     # cross validation
     cv_score = pd.DataFrame(
@@ -130,6 +145,7 @@ def main():
         columns=['R2_train', 'MAE_train', 'R2_valid', 'MAE_valid']
     )
     makedirs(path.join(out_dir_path, 'weights'), exist_ok=True)
+    all_epoch = []
     for i, (train_index, valid_index) in enumerate(idx_list):
         X_kf_train, X_kf_valid = X_train_scaled[train_index], X_train_scaled[valid_index]
         y_kf_train, y_kf_valid = y_train[train_index], y_train[valid_index]
@@ -144,8 +160,8 @@ def main():
 
         # fit and predict
         # FIXME: The paper didn't mention about epoch and batch size
-        regressor.fit(X_kf_train, y_kf_train, epochs=150, batch_size=32,
-                      validation_data=(X_kf_valid, y_kf_valid), callbacks=callbacks)
+        history = regressor.fit(X_kf_train, y_kf_train, epochs=150, batch_size=32,
+                                validation_data=(X_kf_valid, y_kf_valid), callbacks=callbacks)
         regressor.load_weights(best_weights_filepath)
         pred_y_kf_train = regressor.predict(X_kf_train)
         pred_y_kf_valid = regressor.predict(X_kf_valid)
@@ -158,6 +174,7 @@ def main():
         cv_score.loc[cv_name, 'MAE_valid'] = mean_absolute_error(y_kf_valid, pred_y_kf_valid)
 
         # verbose
+        all_epoch.append(np.argmin(history['val_mae'] + 1))
         print('CV: {0}/{1} R2_train: {2} MAE_train: {3}\t'
               'R2_valid: {4} MAE_valid: {5}'.format(
                   i+1, args.fold, cv_score.loc[cv_name, 'R2_train'], cv_score.loc[cv_name, 'MAE_train'],
@@ -167,27 +184,23 @@ def main():
     cv_score.to_csv(path.join(out_dir_path, 'cv_score.csv'))
 
     # H-test
-    # retrain all data
-    X_train, X_valid, y_train, y_valid = train_test_split(X_train_scaled, y_train, test_size=args.test_ratio)
-
     # initialize model
     regressor = make_dnn_model()
+    epochs = int(np.mean(all_epoch) * (args.fold / (args.fold - 1)))
     best_weights_filepath = path.join(out_dir_path, 'best_weights_h_test.hdf5'.format(i+1))
     callbacks = [
-        EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=0, mode='auto'),
         ModelCheckpoint(best_weights_filepath, monitor='val_mae', verbose=1, save_best_only=True, mode='auto')
     ]
 
     # fit and predict
     # FIXME: The paper didn't mention about epoch and batch size
-    regressor.fit(X_train, y_train, epochs=150, batch_size=32,
-                  validation_data=(X_valid, y_valid), callbacks=callbacks)
+    regressor.fit(X_train_scaled, y_train, epochs=epochs, batch_size=32, callbacks=callbacks)
     regressor.load_weights(best_weights_filepath)
-    pred_y_valid = regressor.predict(X_valid)
     pred_y_test = regressor.predict(X_test_scaled)
 
     # save score
-    test_pred_val = pd.DataFrame({'test_ground_truth': y_test, 'test_pred': pred_y_test.reshape(-1),
+    test_pred_val = pd.DataFrame({'test_ground_truth': y_test,
+                                  'test_pred': pred_y_test.reshape(-1),
                                   'raw_index': test_idx})
     test_score = pd.DataFrame(index=['test'], columns=['R2_test', 'MAE_test', 'RMSE_test'])
     test_score.loc['test', 'R2_test'] = r2_score(y_test, pred_y_test)
