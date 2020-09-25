@@ -13,7 +13,6 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from utils import NUM_OF_FEATURE, ElementDataSingleton, create_feature_from_formula, \
     create_feature_from_wokring_ion, create_feature_from_crystal_system
 
-NUM_OF_FEATURE = NUM_OF_FEATURE - 88
 
 def parse_arguments():
     # Set up the argument parser.
@@ -57,7 +56,7 @@ if __name__ == '__main__':
                                                                 battery_table['working_ion']))):
 
         # load crystal object from cif
-        # charge_crystal = Structure.from_str(cif_data[id_charge].value, 'cif')
+        charge_crystal = Structure.from_str(cif_data[id_charge].value, 'cif')
         discharge_crystal = Structure.from_str(cif_data[id_discharge].value, 'cif')
 
         # specific features
@@ -69,22 +68,20 @@ if __name__ == '__main__':
         ion_concentrate = np.array([dischr_comp.get_atomic_fraction(Element(ion))])
 
         # calculate features from element property
-        # charge_formula = charge_crystal.formula
+        charge_formula = charge_crystal.formula
         discharge_formula = discharge_crystal.formula
-        # feature_from_chr_formula = create_feature_from_formula(charge_formula, element_data)
+        feature_from_chr_formula = create_feature_from_formula(charge_formula, element_data)
         feature_from_dischr_formula = create_feature_from_formula(discharge_formula, element_data)
         feature_from_ion = create_feature_from_formula(ion, element_data)
 
         # if charge_formula is a single element
-        #if feature_from_chr_formula.shape[0] == 44:
-        #    feature_from_chr_formula = np.concatenate([feature_from_chr_formula, np.zeros(44)])
+        if feature_from_chr_formula.shape[0] == 44:
+            feature_from_chr_formula = np.concatenate([feature_from_chr_formula, np.zeros(44)])
 
         # concate all features
         features[i] = np.concatenate([space_group_feat, crystal_system_feat, ion_feat, ion_concentrate,
-                                      feature_from_dischr_formula, feature_from_ion])
+                                      feature_from_chr_formula, feature_from_dischr_formula, feature_from_ion])
 
-    # standardizing for PCA
-    scaler = StandardScaler()
-    df = pd.DataFrame(data=scaler.fit_transform(features),
-                      columns=['feat_{}'.format(i+1) for i in range(239-88)])
+    # save
+    df = pd.DataFrame(data=features, columns=['feat_{}'.format(i+1) for i in range(239)])
     df.to_csv(out_csv_path)

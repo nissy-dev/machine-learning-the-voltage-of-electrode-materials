@@ -10,7 +10,7 @@ import tensorflow as tf
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import train_test_split
 from keras import regularizers
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
@@ -34,10 +34,12 @@ def parse_arguments():
     parser.add_argument('--out-dir', '-o', default='result',
                         type=str, help='path for output directory')
     # for model
-    parser.add_argument('--train-ratio', default=0.8, type=float,
-                        help='percentage of train data to be loaded (default 0.9)')
+    parser.add_argument('--train-ratio', default=0.6, type=float,
+                        help='percentage of train data to be loaded (default 0.6)')
+    parser.add_argument('--valid-ratio', default=0.2, type=float,
+                        help='percentage of valid data to be loaded (default 0.2)')
     parser.add_argument('--test-ratio', default=0.2, type=float,
-                        help='percentage of test data to be loaded (default 0.1)')
+                        help='percentage of test data to be loaded (default 0.2)')
     parser.add_argument('--fold', type=int, default=10,
                         help='fold value for cross validation, (default: 10)')
     # target ion : Li, Ca, Cs, Rb, K, Y, Na, Al, Zn, Mg
@@ -47,9 +49,6 @@ def parse_arguments():
                         help='test data includes one ion, (default: Na)')
     parser.add_argument('--seed', type=int, default=1234,
                         help='seed value for random value, (default: 1234)')
-    # sampling
-    parser.add_argument('--sampling', action='store_true',
-                        help='sampling 3977 data for comparing with the previous study, (default: false)')
     return parser.parse_args()
 
 
@@ -112,91 +111,53 @@ def main():
         ion_list = args.target_ion.split('_')
         train_data = table_data[table_data['working_ion'].isin(ion_list)]
 
-    # sampling
-    if args.sampling:
-        train_data = train_data.sample(n=3977)
+    # split
+    train_table, valid_table, test_table = \
+        train_valid_test_split(train_data, train_ratio=args.train_ratio, val_ratio=args.valid_ratio,
+                               test_ratio=args.test_ratio, stratify='working_ion')
+    test_idx = test_table.index
 
-    # target data
-    target = train_data['average_voltage'].values
-    # feature data
-    feat_columns = ['feat_{}'.format(i+1) for i in range(239-88)]
-    features = train_data[feat_columns]
-    # index
-    index = train_data.index
-
-    # dimension reduction by PCA
+    # PCA and MinMaxScaler for train data
+    feat_columns = ['feat_{}'.format(i+1) for i in range(239)]
+    X_train = train_table[feat_columns]
     pca = PCA(n_components=80)
-    features = pca.fit_transform(features)
-
-    # split and scaling
-    X_train, X_test, y_train, y_test, train_idx, test_idx = \
-        train_test_split(features, target, index, test_size=args.test_ratio)
+    X_train = pca.fit_transform(X_train)
     x_scaler = MinMaxScaler(feature_range=(-1, 1))
-    X_train_scaled = x_scaler.fit_transform(X_train)
-    X_test_scaled = x_scaler.transform(X_test)
+    X_train = x_scaler.fit_transform(X_train)
+    y_train = train_table['average_voltage'].values
 
-    # create KFold cross validation instance
-    kf = StratifiedKFold(n_splits=args.fold)
-    idx_list = kf.split(X_train_scaled, train_data[train_idx]['working_ion'])
+    # transoform valid and test data
+    X_valid = x_scaler.transform(pca.transform(valid_table[feat_columns]))
+    y_valid = valid_table['average_voltage'].values
+    X_test = x_scaler.transform(pca.transform(test_table[feat_columns]))
+    y_test = test_table['average_voltage'].values
 
-    # cross validation
-    cv_score = pd.DataFrame(
-        index=['cv_{}'.format(i+1) for i in range(args.fold)],
-        columns=['R2_train', 'MAE_train', 'R2_valid', 'MAE_valid']
-    )
-    makedirs(path.join(out_dir_path, 'weights'), exist_ok=True)
-    all_epoch = []
-    for i, (train_index, valid_index) in enumerate(idx_list):
-        X_kf_train, X_kf_valid = X_train_scaled[train_index], X_train_scaled[valid_index]
-        y_kf_train, y_kf_valid = y_train[train_index], y_train[valid_index]
-
-        # initialize model
-        regressor = make_dnn_model()
-        best_weights_filepath = path.join(out_dir_path, 'weights', 'best_weights_fold_{}.hdf5'.format(i+1))
-        callbacks = [
-            EarlyStopping(monitor='val_mae', min_delta=0, patience=15, verbose=0, mode='auto'),
-            ModelCheckpoint(best_weights_filepath, monitor='val_mae', verbose=1, save_best_only=True, mode='auto')
-        ]
-
-        # fit and predict
-        # FIXME: The paper didn't mention about epoch and batch size
-        history = regressor.fit(X_kf_train, y_kf_train, epochs=150, batch_size=32,
-                                validation_data=(X_kf_valid, y_kf_valid), callbacks=callbacks)
-        regressor.load_weights(best_weights_filepath)
-        pred_y_kf_train = regressor.predict(X_kf_train)
-        pred_y_kf_valid = regressor.predict(X_kf_valid)
-
-        # save score
-        cv_name = 'cv_{}'.format(i+1)
-        cv_score.loc[cv_name, 'R2_train'] = r2_score(y_kf_train, pred_y_kf_train)
-        cv_score.loc[cv_name, 'MAE_train'] = mean_absolute_error(y_kf_train, pred_y_kf_train)
-        cv_score.loc[cv_name, 'R2_valid'] = r2_score(y_kf_valid, pred_y_kf_valid)
-        cv_score.loc[cv_name, 'MAE_valid'] = mean_absolute_error(y_kf_valid, pred_y_kf_valid)
-
-        # verbose
-        all_epoch.append(np.argmin(history['val_mae'] + 1))
-        print('CV: {0}/{1} R2_train: {2} MAE_train: {3}\t'
-              'R2_valid: {4} MAE_valid: {5}'.format(
-                  i+1, args.fold, cv_score.loc[cv_name, 'R2_train'], cv_score.loc[cv_name, 'MAE_train'],
-                  cv_score.loc[cv_name, 'R2_valid'], cv_score.loc[cv_name, 'MAE_valid']))
-
-    # dump csv
-    cv_score.to_csv(path.join(out_dir_path, 'cv_score.csv'))
-
-    # H-test
     # initialize model
     regressor = make_dnn_model()
-    epochs = int(np.mean(all_epoch) * (args.fold / (args.fold - 1)))
-    best_weights_filepath = path.join(out_dir_path, 'best_weights_h_test.hdf5'.format(i+1))
+    best_model_path = path.join(out_dir_path, 'best_model.hdf5')
     callbacks = [
-        ModelCheckpoint(best_weights_filepath, monitor='val_mae', verbose=1, save_best_only=True, mode='auto')
+        EarlyStopping(monitor='val_mae', min_delta=0, patience=15, verbose=0, mode='auto'),
+        ModelCheckpoint(best_model_path, monitor='val_mae', verbose=1, save_best_only=True, mode='auto')
     ]
 
     # fit and predict
-    # FIXME: The paper didn't mention about epoch and batch size
-    regressor.fit(X_train_scaled, y_train, epochs=epochs, batch_size=32, callbacks=callbacks)
-    regressor.load_weights(best_weights_filepath)
-    pred_y_test = regressor.predict(X_test_scaled)
+    regressor.fit(X_train, y_train, epochs=150, batch_size=32,
+                  validation_data=(X_valid, y_valid), callbacks=callbacks)
+    regressor.load_weights(best_model_path)
+    pred_y_train = regressor.predict(X_train)
+    pred_y_valid = regressor.predict(X_valid)
+
+    # calc score
+    score = pd.DataFrame(index=['hold_out'], columns=['MAE'])
+    score.loc['hold_out', 'R2_valid'] = r2_score(y_valid, pred_y_valid)
+    score.loc['hold_out', 'MAE_valid'] = mean_absolute_error(y_valid, pred_y_valid)
+
+    # save cv_score to csv
+    score.to_csv(path.join(out_dir_path, 'score.csv'))
+
+    # H-test
+    regressor.load_weights(best_model_path)
+    pred_y_test = regressor.predict(X_test)
 
     # save score
     test_pred_val = pd.DataFrame({'test_ground_truth': y_test,
@@ -215,12 +176,10 @@ def main():
         # preprocess
         test_data = table_data[table_data['working_ion'].isin([args.test_ion])]
         y = test_data['average_voltage'].values
-        test_features = test_data[feat_columns]
-        test_features = pca.transform(test_features)
-        X_test_scaled = x_scaler.transform(test_features)
+        X = x_scaler.transform(pca.transform(test_data[feat_columns]))
 
         # predict
-        pred_y = regressor.predict(X_test_scaled)
+        pred_y = regressor.predict(X)
 
         # save score
         test_pred_val = pd.DataFrame({'test_ground_truth': y, 'test_pred': pred_y.reshape(-1),
