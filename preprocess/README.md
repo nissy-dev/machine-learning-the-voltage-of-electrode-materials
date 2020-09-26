@@ -5,7 +5,7 @@
 ```
 $ python create_features.py \
           --element-data ../dataset/element_data \
-          --battery-data ../dataset/mp_data/voltage_2020_08_05.csv \
-          --cif-data ../dataset/mp_data/voltage_final_structure_2020_08_04.h5 \
+          --battery-data ../dataset/mp_data/voltage_YYYY_MM_DD.csv \
+          --cif-data ../dataset/mp_data/voltage_final_structure_YYYY_MM_DD.h5 \
           --out ../dataset/feature
 ```

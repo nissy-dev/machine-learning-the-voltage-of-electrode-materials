@@ -4,7 +4,7 @@
 
 ```
 $ python train_dnn.py --feat-path ../dataset/feature/repro_features_YYYY_MM_DD.csv \
-                      --battery-path ../dataset/mp_data/voltage_final_structure_2020_08_04.h5 \
+                      --battery-path ../dataset/mp_data/voltage_final_structure_YYYY_MM_DD.h5 \
                       --test-ion Na \
-                      --out-dir result/dnn
+                      --out-dir result/dnn_YYYY_MM_DD
 ```
