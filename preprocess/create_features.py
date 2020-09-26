@@ -20,9 +20,9 @@ def parse_arguments():
 
     parser.add_argument('--element-data', '-ed', type=str, default='../dataset/element_data',
                         help='path of element data directory')
-    parser.add_argument('--battery-data', '-bd', type=str, default='../dataset/mp_data/data_2019_12_03.csv',
+    parser.add_argument('--battery-data', '-bd', type=str, required=True,
                         help='path of battery csv data')
-    parser.add_argument('--cif-data', type=str, default='../dataset/mp_data/data_2019_12_03.h5',
+    parser.add_argument('--cif-data', type=str, required=True,
                         help='path to cif data (relative path)')
     parser.add_argument('--out', '-o', type=str, default='../dataset/feature',
                         help='directory path to save feature data')

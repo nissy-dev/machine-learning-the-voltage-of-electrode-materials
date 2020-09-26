@@ -27,9 +27,9 @@ def seed_every_thing(seed=1234):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Reproduce DNN regression')
     # for dataset path
-    parser.add_argument('--feat-path', default='../dataset/feature/repro_features_YYYY_MM_DD.csv',
+    parser.add_argument('--feat-path', required=True,
                         type=str, help='path to feature (relative path)')
-    parser.add_argument('--battery-path', default='../dataset/mp_data/data_2019_12_03.csv',
+    parser.add_argument('--battery-path', required=True,
                         type=str, help='path to csv data (relative path)')
     parser.add_argument('--out-dir', '-o', default='result',
                         type=str, help='path for output directory')
