@@ -82,8 +82,6 @@ if __name__ == '__main__':
         features[i] = np.concatenate([space_group_feat, crystal_system_feat, ion_feat, ion_concentrate,
                                       feature_from_chr_formula, feature_from_dischr_formula, feature_from_ion])
 
-    # standardizing for PCA
-    scaler = StandardScaler()
-    df = pd.DataFrame(data=scaler.fit_transform(features),
+    df = pd.DataFrame(data=features,
                       columns=['feat_{}'.format(i+1) for i in range(239)])
     df.to_csv(out_csv_path)

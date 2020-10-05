@@ -7,7 +7,7 @@ from os import path, makedirs, getcwd, environ
 from sklearn.svm import SVR
 from sklearn.decomposition import PCA
 from sklearn.kernel_ridge import KernelRidge
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.metrics import r2_score, mean_absolute_error, make_scorer
 from sklearn.model_selection import train_test_split, KFold, GridSearchCV
 
@@ -37,15 +37,12 @@ def parse_arguments():
     parser.add_argument('--fold', type=int, default=10,
                         help='fold value for cross validation, (default: 10)')
     # target ion : Li, Ca, Cs, Rb, K, Y, Na, Al, Zn, Mg
-    parser.add_argument('--target-ion', type=str, default='Li_Ca_K_Y_Al_Zn_Mg',
-                        help='drop a specific ion data, (default: Li_Ca_K_Y_Al_Zn_Mg)')
+    parser.add_argument('--target-ion', type=str, default='Li_Ca_Y_Al_Zn_Mg',
+                        help='drop a specific ion data, (default: Li_Ca_Y_Al_Zn_Mg)')
     parser.add_argument('--test-ion', type=str, default='Na',
                         help='test data includes one ion, (default: Na)')
     parser.add_argument('--seed', type=int, default=1234,
                         help='seed value for random value, (default: 1234)')
-    # sampling
-    parser.add_argument('--sampling', action='store_true',
-                        help='sampling 3977 data for comparing with the previous study, (default: false)')
     return parser.parse_args()
 
 
@@ -74,25 +71,26 @@ def main():
     table_data = battery_data.join(feat_data)
     table_data.index = past_index
 
+    # drop duplicated rows
+    feat_columns = ['feat_{}'.format(i+1) for i in range(239)]
+    table_data = table_data[~table_data.duplicated(subset=feat_columns)]
+
     # collect target ion data
     if args.target_ion is not None:
         ion_list = args.target_ion.split('_')
         train_data = table_data[table_data['working_ion'].isin(ion_list)]
 
-    # sampling
-    if args.sampling:
-        train_data = train_data.sample(n=3977)
-
     # target data
     target = train_data['average_voltage'].values
     # feature data
-    feat_columns = ['feat_{}'.format(i+1) for i in range(239)]
     features = train_data[feat_columns]
     # index
     index = train_data.index
 
     # dimension reduction by PCA
+    pca_scaler = StandardScaler()
     pca = PCA(n_components=80)
+    features = pca_scaler.fit_transform(features)
     features = pca.fit_transform(features)
 
     # split and scaling
@@ -152,6 +150,7 @@ def main():
         y = test_data['average_voltage'].values
         feat_columns = ['feat_{}'.format(i+1) for i in range(239)]
         test_features = test_data[feat_columns]
+        test_features = pca_scaler.transform(test_features)
         test_features = pca.transform(test_features)
         X_test_scaled = x_scaler.transform(test_features)
         # predict
