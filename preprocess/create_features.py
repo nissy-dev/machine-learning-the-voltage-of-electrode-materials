@@ -6,7 +6,6 @@ import pandas as pd
 from tqdm import tqdm
 from datetime import datetime
 from os import path, makedirs, getcwd
-from sklearn.preprocessing import StandardScaler
 from pymatgen.core import Composition, Element, Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
