@@ -21,7 +21,7 @@ Python version : 3.6.5
 ### 1. Clone this repository and setup the environment
 
 ```
-$ git clone https://github.com/nd-02110114/machine-learning-the-voltage-of-electrode-materials.git
+$ git clone https://github.com/nissy-dev/machine-learning-the-voltage-of-electrode-materials.git
 $ cd machine-learning-the-voltage-of-electrode-materials
 $ python -v venv venv
 $ source venv/bin/activate
